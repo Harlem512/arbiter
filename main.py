@@ -1,8 +1,10 @@
 import discord
 import json
 import asyncio
+import os
+import sys
 
-with open('data.json', 'r') as read:
+with open(os.path.join(sys.path[0], 'data.json'), 'r') as read:
     data = json.load(read)
 
 if not data['token']:
