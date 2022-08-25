@@ -3,9 +3,19 @@ import json
 import asyncio
 import os
 import sys
+import re
+
+from bs4 import BeautifulSoup
+import requests
+
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36'
+URL_REGEX = r'(https?://www\.youtube\.com/watch\?v=[^\s]+)'
+
 
 with open(os.path.join(sys.path[0], 'data.json'), 'r') as read:
     data = json.load(read)
+
+ALLOW_MITCHPOSTING = 'channel_blacklist' in data
 
 if not data['token']:
     print('Error: token invalid or missing')
@@ -16,17 +26,42 @@ join_lock = asyncio.Lock()
 # Set of users that will be kicked after 5 seconds for joining deaf-mute
 join_set = set()
 
-class MyClient(discord.Client):
+
+class Arbiter(discord.Client):
     async def on_ready(self):
         print('Logged on as', self.user)
 
-    # async def on_message(self, message):
-    #     # don't respond to ourselves
-    #     if message.author == self.user:
-    #         return
+    async def on_message(self, message):
+        if not ALLOW_MITCHPOSTING:
+            return
 
-    #     if message.content == 'ping':
-    #         await message.channel.send('pong')
+        if message.author == self.user:
+            return
+
+        urls = re.findall(URL_REGEX, message.content)
+
+        mitchpost = False
+
+        for url in urls:
+            # Check for mitch-posting
+            response = requests.get(url, headers={'User-Agent': USER_AGENT})
+            soup = BeautifulSoup(response.text, 'lxml')
+
+            for link in soup.find_all('link', {'itemprop': 'url'}):
+                # if 'channel' in link
+                if 'channel' in link['href']:
+                    if link['href'] in data['channel_blacklist']:
+                        mitchpost = True
+                        break
+
+            if mitchpost:
+                break
+
+        if mitchpost:
+            await message.delete()
+            await message.channel.send(
+                f'{message.author.mention} Mitchposting is not allowed'
+            )
 
     async def on_voice_state_update(self, member, before, after):
         if after.channel == None:
@@ -54,5 +89,8 @@ class MyClient(discord.Client):
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = MyClient(intents=intents)
+client = Arbiter(
+    intents=intents,
+    activity=discord.Activity(type=discord.ActivityType.watching, name='for villains'),
+)
 client.run(data['token'])
