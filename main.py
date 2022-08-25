@@ -10,6 +10,7 @@ import requests
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36'
 URL_REGEX = r'(https?://www\.youtube\.com/watch\?v=[^\s]+)'
+QUIET = True
 
 
 with open(os.path.join(sys.path[0], 'data.json'), 'r') as read:
@@ -32,6 +33,13 @@ class Arbiter(discord.Client):
         print('Logged on as', self.user)
 
     async def on_message(self, message):
+        if message.content == '!!!toggle':
+            QUIET = not QUIET
+            return
+
+        if QUIET:
+            return
+
         if not ALLOW_MITCHPOSTING:
             return
 
@@ -64,6 +72,9 @@ class Arbiter(discord.Client):
             )
 
     async def on_voice_state_update(self, member, before, after):
+        if QUIET:
+            return
+        
         if after.channel == None:
             return
 
@@ -94,3 +105,6 @@ client = Arbiter(
     activity=discord.Activity(type=discord.ActivityType.watching, name='for villains'),
 )
 client.run(data['token'])
+
+if QUIET:
+    client.change_presence(status=discord.Status.offline)
