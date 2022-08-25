@@ -12,7 +12,8 @@ import requests
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36'
 URL_REGEX = r'(https?://www\.youtube\.com/watch\?v=[^\s]+)'
 invisible = True
-enabled = False
+enabled = True
+deafMuteOverride = True
 
 
 def time_print(s: str):
@@ -111,9 +112,10 @@ class Arbiter(discord.Client):
             )
 
     async def on_voice_state_update(self, member, before, after):
-        global invisible
+        global enabled
+        global deafMuteOverride
 
-        if invisible or after.channel == None:
+        if deafMuteOverride or not enabled or after.channel == None:
             return
 
         if after.self_mute and after.self_deaf:
