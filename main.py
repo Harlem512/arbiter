@@ -114,8 +114,8 @@ client = Arbiter(
     intents=intents,
     activity=discord.Activity(type=discord.ActivityType.watching, name='for villains'),
 )
-client.run(data['token'])
-
 if silent:
     time_print('Going incognito...')
     client.change_presence(status=discord.Status.offline)
+
+client.run(data['token'])
