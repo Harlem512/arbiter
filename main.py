@@ -4,14 +4,18 @@ import asyncio
 import os
 import sys
 import re
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 import requests
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36'
 URL_REGEX = r'(https?://www\.youtube\.com/watch\?v=[^\s]+)'
-QUIET = True
+silent = True
 
+
+def time_print(s: str):
+    print(f'{datetime.now()} | {s}')
 
 with open(os.path.join(sys.path[0], 'data.json'), 'r') as read:
     data = json.load(read)
@@ -30,14 +34,16 @@ join_set = set()
 
 class Arbiter(discord.Client):
     async def on_ready(self):
-        print('Logged on as', self.user)
+        time_print(f'Logged on as {self.user}')
 
     async def on_message(self, message):
+        global silent
+
         if message.content == '!!!toggle':
-            QUIET = not QUIET
+            silent = not silent
             return
 
-        if QUIET:
+        if silent:
             return
 
         if not ALLOW_MITCHPOSTING:
@@ -70,11 +76,14 @@ class Arbiter(discord.Client):
             await message.channel.send(
                 f'{message.author.mention} Mitchposting is not allowed'
             )
+            time_print(f'Deleted mitchpost `{message.content}` by {message.author.mention}')
 
     async def on_voice_state_update(self, member, before, after):
-        if QUIET:
+        global silent
+
+        if silent:
             return
-        
+
         if after.channel == None:
             return
 
@@ -92,6 +101,7 @@ class Arbiter(discord.Client):
                         join_set.remove(member.id)
 
             await member.edit(voice_channel=None, reason='deaf-mute is not allowed')
+            time_print(f'Kicked user {member.mention}')
 
         async with join_lock:
             if member.id in join_set:
@@ -106,5 +116,6 @@ client = Arbiter(
 )
 client.run(data['token'])
 
-if QUIET:
+if silent:
+    time_print('Going incognito...')
     client.change_presence(status=discord.Status.offline)
