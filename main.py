@@ -56,26 +56,25 @@ class Arbiter(discord.Client):
         global invisible
         global enabled
 
-        match message.content:
-            case 'hey arbiter':
-                return await message.channel.send('hello')
-            case '!!!invis':
-                invisible = not invisible
-                await self.change_presence(
-                    status=discord.Status.offline
-                    if invisible
-                    else discord.Status.online,
-                    activity=discord.Activity(
-                        type=discord.ActivityType.watching,
-                        name='for villains',
-                    ),
-                )
-                time_print(f'Invisible: {invisible} by {name(message.author)}')
-                return
-            case '!!!enable':
-                enabled = not enabled
-                time_print(f'Enable: {enabled} by {name(message.author)}')
-                return
+        if message.content == 'hey arbiter':
+            return await message.channel.send('hello')
+
+        if message.content == '!!!invis':
+            invisible = not invisible
+            await self.change_presence(
+                status=discord.Status.offline if invisible else discord.Status.online,
+                activity=discord.Activity(
+                    type=discord.ActivityType.watching,
+                    name='for villains',
+                ),
+            )
+            time_print(f'Invisible: {invisible} by {name(message.author)}')
+            return
+
+        if message.content == '!!!enable':
+            enabled = not enabled
+            time_print(f'Enable: {enabled} by {name(message.author)}')
+            return
 
         if not enabled or not ALLOW_MITCHPOSTING or message.author == self.user:
             return
